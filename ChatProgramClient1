@@ -1,0 +1,102 @@
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import java.io.*;
+import java.net.*;
+
+
+class ChatProgramClient {
+  
+  JButton sendButton, clearButton;
+  JTextField typeField;
+  JTextArea msgArea;  
+  JPanel southPanel;
+  Socket mySocket; //socket for connection
+  BufferedReader input; //reader for network stream
+  PrintWriter output;  //printwriter for network output
+  boolean running = true; //thread status via boolean
+  
+  public static void main(String[] args) { 
+    new ChatProgramClient().go();
+  }
+    
+  public void go() {
+    JFrame window = new JFrame("Chat Client");
+    southPanel = new JPanel();
+    southPanel.setLayout(new GridLayout(2,0));
+    
+    sendButton = new JButton("SEND");
+    clearButton = new JButton("CLEAR");
+    
+    sendButton.addActionListener(new sendListener());
+    clearButton.addActionListener(new clearListener());
+    
+    JLabel errorLabel = new JLabel("");
+    
+    typeField = new JTextField(10);
+    
+    msgArea = new JTextArea();
+    
+    southPanel.add(typeField);
+    southPanel.add(sendButton);
+    southPanel.add(errorLabel);
+    southPanel.add(clearButton);
+    
+    window.add(BorderLayout.CENTER,msgArea);
+    window.add(BorderLayout.SOUTH,southPanel);
+    
+    window.setSize(400,400);
+    window.setVisible(true);
+    
+    // call a method that connects to the server 
+    try {
+      mySocket = new Socket("127.0.0.1",5000); //attempt socket connection (local address). This will wait until a connection is made
+      
+      InputStreamReader stream1= new InputStreamReader(mySocket.getInputStream()); //Stream for network input
+      input = new BufferedReader(stream1);
+            
+      output = new PrintWriter(mySocket.getOutputStream()); //assign printwriter to network stream
+      
+    } catch (IOException e) {  //connection error occured
+      System.out.println("Connection to Server Failed");
+      e.printStackTrace();
+    }
+
+    while (running){
+      try{
+        msgArea.append(input.readLine());
+      }catch (IOException e) { 
+        System.out.println("Failed to receive msg from the server");
+        e.printStackTrace();
+      }
+    }
+    
+    try {  //after leaving the main loop we need to close all the sockets
+      input.close();
+      output.close();
+      mySocket.close();
+    }catch (Exception e) { 
+      System.out.println("Failed to close socket");
+    }
+  }
+  
+  
+  //****** Inner Classes for Action Listeners ****
+  public class sendListener implements ActionListener{
+    public void actionPerformed(ActionEvent event){
+      output.println(typeField.getText());
+      output.flush();
+      typeField.setText("");
+    }
+  }
+  
+  public class clearListener implements ActionListener{
+    public void actionPerformed(ActionEvent event){
+      typeField.setText("");
+    }
+  }
+  //To complete this you will need to add action listeners to both buttons
+  // clear - clears the textfield
+  // send - send msg to server (also flush), then clear the JTextField
+  
+}
