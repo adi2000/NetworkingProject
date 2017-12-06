@@ -49,6 +49,9 @@ class ChatProgramClient {
     sendButton = new JButton("SEND");
     clearButton = new JButton("CLEAR");
     
+    sendButton.addActionListener(new sendListener());
+    clearButton.addActionListener(new clearListener());
+    
     JLabel errorLabel = new JLabel("");
     
     typeField = new JTextField("", 10);
