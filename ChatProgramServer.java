@@ -10,11 +10,14 @@
 //imports for network communication
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 class ChatProgramServer {
   
   ServerSocket serverSock;// server socket for connection
   static Boolean running = true;  // controls if the server is accepting clients
+  static Queue<String> incoming = new LinkedList<String>();
+  static ArrayList<Socket> socketList = new ArrayList<Socket>();
   
    /** Main
     * @param args parameters from command line
@@ -52,6 +55,23 @@ class ChatProgramServer {
       }
       System.exit(-1);
     }
+  }
+  
+  class MessageSender implements Runnable {
+    
+    public void run(){
+      
+      Socket client;
+      
+      for (int i = 0; i<socketList.size();i++){
+        client = socketList.get(i);
+        PrintWriter output = new PrintWriter(client.getOutputStream());
+        
+        ouput.println(incoming.remove());
+        output.flush();
+      }
+    }
+    
   }
   
   //***** Inner class - thread for client connection
@@ -95,6 +115,7 @@ class ChatProgramServer {
           if (input.ready()) { //check for an incoming messge
             msg = input.readLine();  //get a message from the client
             System.out.println("msg from client: " + msg); 
+            incoming.add(msg);
             //running=false; //stop receving messages
           }
           }catch (IOException e) { 
