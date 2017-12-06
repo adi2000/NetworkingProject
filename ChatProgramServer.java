@@ -30,15 +30,15 @@ class ChatProgramServer {
     * Starts the server
     */
   public void go() { 
-        System.out.println("Waiting for a client connection..");
+    System.out.println("Waiting for a client connection..");
     
-     Socket client = null;//hold the client connection
-        
+    Client client = new Client();//hold the client connection
+    
     try {
       serverSock = new ServerSocket(796);  //assigns an port to the server
-     // serverSock.setSoTimeout(5000);  //5 second timeout
-         while(running) {  //this loops to accept multiple clients
-            client = serverSock.accept();  //wait for connection
+      // serverSock.setSoTimeout(5000);  //5 second timeout
+      while(running) {  //this loops to accept multiple clients
+           client.setSocket(serverSock.accept());  //wait for connection
            System.out.println("Client connected");
            //Note: you might want to keep references to all clients if you plan to broadcast messages
            //Also: Queues are good tools to buffer incoming/outgoing messages
@@ -49,7 +49,7 @@ class ChatProgramServer {
      // System.out.println("Error accepting connection");
       //close all and quit
       try {
-        client.close();
+        client.getSocket().close();
       }catch (Exception e1) { 
         System.out.println("Failed to close socket");
       }
@@ -66,7 +66,8 @@ class ChatProgramServer {
     }
     
     public void send(ArrayList<Client> list){
-      Client client;
+      System.out.print("hello");
+      Client client = new Client();
       while (running){ 
         for (int i = 0; i<list.size();i++){
           client = list.get(i);
@@ -94,8 +95,8 @@ class ChatProgramServer {
      * Constructor
      * @param the socket belonging to this client connection
      */    
-    ConnectionHandler(Socket s) { 
-      this.client.setSocket(s);  //constructor assigns client to this    
+    ConnectionHandler(Client s) { 
+      client = s;  //constructor assigns client to this    
       try {  //assign all connections to client
         this.output = new PrintWriter(client.getSocket().getOutputStream());
         InputStreamReader stream = new InputStreamReader(client.getSocket().getInputStream());
@@ -110,16 +111,15 @@ class ChatProgramServer {
     /* run
      * executed on start of thread
      */
-    public void run() {  
-
+    public void run(Client s) {
+      
       //Get a message from the client
       String msg="";
-      
          //Send a message to the client
-      output.println("Clients connected:");
+      output.print("Clients connected: ");
       output.flush(); 
       for (int i = 0; i<clientList.size();i++){
-        output.println(clientList.get(i).getName());
+        output.print(clientList.get(i).getName()+", ");
         output.flush();
       }
       
@@ -127,8 +127,6 @@ class ChatProgramServer {
           if (input.ready()) { //check for an incoming messge
             msg = input.readLine();  //get a message from the client
             System.out.println("client username: " + msg); 
-            incoming.add(msg);
-            //running=false; //stop receving messages
           }
           }catch (IOException e) { 
             System.out.println("Failed to recieve username");
