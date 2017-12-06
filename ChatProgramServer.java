@@ -17,7 +17,7 @@ class ChatProgramServer {
   ServerSocket serverSock;// server socket for connection
   static Boolean running = true;  // controls if the server is accepting clients
   static Queue<String> incoming = new LinkedList<String>();
-  static ArrayList<Socket> socketList = new ArrayList<Socket>();
+  static ArrayList<Client> clientList = new ArrayList<Client>();
   
    /** Main
     * @param args parameters from command line
@@ -34,16 +34,14 @@ class ChatProgramServer {
     
      Socket client = null;//hold the client connection
         
-    Thread t = new Thread(new MessageSender());
     try {
-      serverSock = new ServerSocket(5000);  //assigns an port to the server
+      serverSock = new ServerSocket(796);  //assigns an port to the server
      // serverSock.setSoTimeout(5000);  //5 second timeout
          while(running) {  //this loops to accept multiple clients
             client = serverSock.accept();  //wait for connection
            System.out.println("Client connected");
            //Note: you might want to keep references to all clients if you plan to broadcast messages
            //Also: Queues are good tools to buffer incoming/outgoing messages
-           socketList.add(client);
            Thread t = new Thread(new ConnectionHandler(client)); //create a thread for the new client and pass in the socket
            t.start(); //start the new thread
          }
@@ -63,14 +61,24 @@ class ChatProgramServer {
     
     public void run(){
       
-      Socket client;
+      send(clientList);
       
-      for (int i = 0; i<socketList.size();i++){
-        client = socketList.get(i);
-        PrintWriter output = new PrintWriter(client.getOutputStream());
-        
-        ouput.println(incoming.remove());
-        output.flush();
+    }
+    
+    public void send(ArrayList<Client> list){
+      Client client;
+      while (running){ 
+        for (int i = 0; i<list.size();i++){
+          client = list.get(i);
+          try{
+            PrintWriter output = new PrintWriter(client.getSocket().getOutputStream());
+            
+            output.println(incoming.remove());
+            output.flush();
+          }catch(IOException e) {
+            e.printStackTrace();        
+          }  
+        }
       }
     }
     
@@ -80,17 +88,17 @@ class ChatProgramServer {
   class ConnectionHandler implements Runnable { 
     private PrintWriter output; //assign printwriter to network stream
     private BufferedReader input; //Stream for network input
-    private Socket client;  //keeps track of the client socket
+    private Client client;  //keeps track of the client socket
     private boolean running;
     /* ConnectionHandler
      * Constructor
      * @param the socket belonging to this client connection
      */    
     ConnectionHandler(Socket s) { 
-      this.client = s;  //constructor assigns client to this    
+      this.client.setSocket(s);  //constructor assigns client to this    
       try {  //assign all connections to client
-        this.output = new PrintWriter(client.getOutputStream());
-        InputStreamReader stream = new InputStreamReader(client.getInputStream());
+        this.output = new PrintWriter(client.getSocket().getOutputStream());
+        InputStreamReader stream = new InputStreamReader(client.getSocket().getInputStream());
         this.input = new BufferedReader(stream);
       }catch(IOException e) {
         e.printStackTrace();        
@@ -108,9 +116,26 @@ class ChatProgramServer {
       String msg="";
       
          //Send a message to the client
-      output.println("We got your message! Goodbye.");
+      output.println("Clients connected:");
       output.flush(); 
+      for (int i = 0; i<clientList.size();i++){
+        output.println(clientList.get(i).getName());
+        output.flush();
+      }
       
+      try {
+          if (input.ready()) { //check for an incoming messge
+            msg = input.readLine();  //get a message from the client
+            System.out.println("client username: " + msg); 
+            incoming.add(msg);
+            //running=false; //stop receving messages
+          }
+          }catch (IOException e) { 
+            System.out.println("Failed to recieve username");
+            e.printStackTrace();
+          }
+          
+          
       //Get a message from the client
       while(running) {  // loop unit a message is received        
         try {
@@ -132,7 +157,7 @@ class ChatProgramServer {
       try {
         input.close();
         output.close();
-        client.close();
+        client.getSocket().close();
       }catch (Exception e) { 
         System.out.println("Failed to close socket");
       }
