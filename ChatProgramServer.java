@@ -34,6 +34,7 @@ class ChatProgramServer {
     
      Socket client = null;//hold the client connection
         
+    Thread t = new Thread(new MessageSender());
     try {
       serverSock = new ServerSocket(5000);  //assigns an port to the server
      // serverSock.setSoTimeout(5000);  //5 second timeout
@@ -42,6 +43,7 @@ class ChatProgramServer {
            System.out.println("Client connected");
            //Note: you might want to keep references to all clients if you plan to broadcast messages
            //Also: Queues are good tools to buffer incoming/outgoing messages
+           socketList.add(client);
            Thread t = new Thread(new ConnectionHandler(client)); //create a thread for the new client and pass in the socket
            t.start(); //start the new thread
          }
