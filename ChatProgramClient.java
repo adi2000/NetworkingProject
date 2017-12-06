@@ -105,4 +105,19 @@ class ChatProgramClient {
       System.out.println("Failed to close socket");
     }
   }
+  
+    //****** Inner Classes for Action Listeners ****
+  public class sendListener implements ActionListener{
+    public void actionPerformed(ActionEvent event){
+      output.println(typeField.getText());
+      output.flush();
+      typeField.setText("");
+    }
+  }
+  
+  public class clearListener implements ActionListener{
+    public void actionPerformed(ActionEvent event){
+      typeField.setText("");
+    }
+  }
 }
