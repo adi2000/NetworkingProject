@@ -1,121 +1,189 @@
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import javax.swing.event.*;
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
+import java.util.*;
+import javax.swing.JTabbedPane;
 
 class ChatProgramClient {
+  //implements ListSelectionListener?
   
-  //GUI variables
+  ArrayList<String> chatList = new ArrayList<String>();
+      
+  JPanel rightPanel;
+  JTabbedPane tabbedPane;
   JButton sendButton, clearButton;
   JTextField typeField;
-  JTextArea msgArea;  
-  JPanel southPanel;
+  JTextArea msgArea;
   
-  Socket mySocket;
-  BufferedReader input;
-  Scanner write;
-  PrintWriter output;
-  boolean running = true;
+  JPanel leftPanel;
+  JPanel searchPanel;
+  JButton searchButton;
+  JTextField searchBar;
+  DefaultListModel<String> listModel;
+  JList userList;
+  ArrayList<Client> users;
   
+  Socket mySocket; //socket for connection
+  BufferedReader input; //reader for network stream
+  PrintWriter output;  //printwriter for network output
+  boolean running = true; //thread status via boolean
+  
+  int key;
+    
   public static void main(String[] args) { 
     new ChatProgramClient().go();
   }
     
   public void go() {
-    
-    System.out.println("attempting to make a connection");
-    
-    try{
-      
-      mySocket = new Socket("10.242.190.203", 796); //local address socket
-      InputStreamReader stream1 = new InputStreamReader(mySocket.getInputStream());
-      input = new BufferedReader(stream1);
-      write = new Scanner(System.in);
-      output = new PrintWriter(mySocket.getOutputStream());
-      
-    } catch (IOException e){
-      System.out.println("Connection to Server Failed");
-      e.printStackTrace();
-    }
-    
-    System.out.println("connection made"); 
-            
+    //setting window
     JFrame window = new JFrame("Chat Client");
-    southPanel = new JPanel();
-    southPanel.setLayout(new GridLayout(2,0));
     
+    //ALL RIGHT PANEL CODE**************************************************/
+    rightPanel = new JPanel();
+    rightPanel.setLayout(new GridLayout(2,0));
+    
+    JPanel textPanel = new JPanel();
+    textPanel.setLayout(new FlowLayout());
+
     sendButton = new JButton("SEND");
     clearButton = new JButton("CLEAR");
     
     sendButton.addActionListener(new sendListener());
     clearButton.addActionListener(new clearListener());
-    
+       
     JLabel errorLabel = new JLabel("");
     
-    typeField = new JTextField("", 10);
+    typeField = new JTextField(10);
     
     msgArea = new JTextArea();
-    msgArea.setEditable(false);
+    JPanel msgPanel = new JPanel();
+    tabbedPane = new JTabbedPane();
+    tabbedPane.addTab("tab 1", msgArea);
+    tabbedPane.addTab("tab 2", msgPanel);
+    //msgPanel.add(tabbedPane);
     
-    southPanel.add(typeField);
-    southPanel.add(sendButton);
-    southPanel.add(errorLabel);
-    southPanel.add(clearButton);
+    textPanel.add(typeField);
+    textPanel.add(sendButton);
+    textPanel.add(clearButton);
     
-    window.add(BorderLayout.CENTER,msgArea);
-    window.add(BorderLayout.SOUTH,southPanel);
+    rightPanel.add(tabbedPane);
+    rightPanel.add(textPanel);
     
-    window.setSize(400,400);
+    /*****************************************************/
+    leftPanel = new JPanel();
+    leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+    
+    searchPanel = new JPanel();
+    searchBar = new JTextField(25);
+    searchButton = new JButton("Search");
+    
+    listModel = new DefaultListModel<String>();
+    users = ChatProgramServer.getList();
+    System.out.println(users);
+    
+    for (int i = 0; i < users.size(); i++){
+      String name = (users.get(i)).getName();
+      listModel.addElement((String)name);
+    }
+    
+    userList = new JList(listModel);
+    userList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+    //userList.addListSelectionListener(new ListListener());
+    JScrollPane listScroll = new JScrollPane(userList);
+    userList.setVisibleRowCount(10);
+    
+    Dimension d = userList.getPreferredSize();
+    d.width = 400;
+    d.height = 400;
+    listScroll.setPreferredSize(d);
+    
+    leftPanel.add(searchPanel);
+    leftPanel.add(userList);
+       
+    /*****************************************************/
+    
+    window.add(BorderLayout.EAST,rightPanel);
+    window.add(BorderLayout.WEST,leftPanel);
+    
+    window.setSize(600,400);
     window.setVisible(true);
     
+    /**********************************************************************************************************************************/
     
-    String str;
-   
-    
-    String msg = "";
-    
-   // System.out.println("0");
-    while(running){
+    // call a method that connects to the server 
+    try {
+      //mySocket = new Socket("10.242.190.203", 796);
+      mySocket = new Socket("127.0.0.1",5000); //attempt socket connection (local address). This will wait until a connection is made
       
-    str = write.nextLine();
-    output.println(str);  
-    output.flush();
-    
-    if (str.equals("end")){
-      running = false;
+      InputStreamReader stream1= new InputStreamReader(mySocket.getInputStream()); //Stream for network input
+      input = new BufferedReader(stream1);
+            
+      output = new PrintWriter(mySocket.getOutputStream()); //assign printwriter to network stream
+      System.out.println("connection achieved");
+    } catch (IOException e) {  //connection error occured
+      System.out.println("Connection to Server Failed");
+      e.printStackTrace();
     }
-     // System.out.println("1");
+
+    while (running){
       try{
-        //System.out.println("2");
-        if (input.ready()){
-          msg = input.readLine();
-          System.out.println("msg from server:" + msg);
-          //running = false;
-        }
-      } catch(IOException e){
+        msgArea.append(input.readLine());
+      }catch (IOException e) { 
         System.out.println("Failed to receive msg from the server");
         e.printStackTrace();
       }
     }
-          
-     try {  //after leaving the main loop we need to close all the sockets
+    
+    try {  //after leaving the main loop we need to close all the sockets
       input.close();
       output.close();
       mySocket.close();
-      System.out.println("closed socket");
     }catch (Exception e) { 
       System.out.println("Failed to close socket");
     }
   }
   
-    //****** Inner Classes for Action Listeners ****
+  public void send(){
+    String text = typeField.getText();      
+    output.println(text);
+    output.flush();
+    typeField.setText("");
+      
+    msgArea.append("\n" + text);
+  }
+  
+  //****** Inner Classes for Action Listeners ****
   public class sendListener implements ActionListener{
     public void actionPerformed(ActionEvent event){
-      output.println(typeField.getText());
-      output.flush();
-      typeField.setText("");
+      send();
+    }
+  }
+  
+  public class listListener implements ListSelectionListener{
+    public void valueChanged(ListSelectionEvent e){
+      if (e.getValueIsAdjusting() == false){
+
+      }
+    }
+  }
+  
+  public class enterListener implements KeyListener{
+    public void keyTyped(KeyEvent e) {
+      key = e.getKeyCode();
+      System.out.println("123");
+      if (key == KeyEvent.VK_ENTER && typeField.getText() != ("")){
+        System.out.println("456");
+        send();
+      }
+    }
+    public void keyReleased(KeyEvent e){
+      //code
+    }
+    public void keyPressed(KeyEvent e){
+      //code
     }
   }
   
