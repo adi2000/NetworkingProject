@@ -1,26 +1,34 @@
+import java.io.*;
+import java.net.*;
+
 class Client{
-  String name = "";
-  String clientIP = "";
+  private String name = "";
+  private Socket s;
   
-  Client(String name, String clientIP){
+  Client(String name, Socket s){
     this.name = name;
-    this.clientIP = clientIP;
+    this.s = s;
+  }
+  
+  Client(){
+    this.name = null;
+    this.s = null;
   }
   
   public String getName(){
     return this.name;
   }
   
-  public String getIP(){
-    return this.name;
+  public Socket getSocket(){
+    return this.s;
   }
   
   public void setName(String name){
     this.name = name;
   }
   
-  public void setIP(String clientIP){
-    this.clientIP = clientIP;
+  public void setSocket (Socket s){
+    this.s = s;
   }
     
 }
