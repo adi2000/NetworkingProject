@@ -111,7 +111,7 @@ class ChatProgramServer {
     /* run
      * executed on start of thread
      */
-    public void run(Client s) {
+    public void run() {  
       
       //Get a message from the client
       String msg="";
