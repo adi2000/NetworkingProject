@@ -35,14 +35,17 @@ class ChatProgramServer {
     Client client = new Client();//hold the client connection
     
     try {
+      Thread msgSend = new Thread(new MessageSender());
+      msgSend.start();
       serverSock = new ServerSocket(796);  //assigns an port to the server
       // serverSock.setSoTimeout(5000);  //5 second timeout
       while(running) {  //this loops to accept multiple clients
            client.setSocket(serverSock.accept());  //wait for connection
            System.out.println("Client connected");
            //Note: you might want to keep references to all clients if you plan to broadcast messages
+           clientList.add(client);
            //Also: Queues are good tools to buffer incoming/outgoing messages
-           Thread t = new Thread(new ConnectionHandler(client)); //create a thread for the new client and pass in the socket
+           Thread t = new Thread(new ConnectionHandler(client,clientList.size()-1)); //create a thread for the new client and pass in the socket
            t.start(); //start the new thread
          }
     }catch(Exception e) { 
@@ -61,20 +64,23 @@ class ChatProgramServer {
     
     public void run(){
       
-      send(clientList);
-      
+      while (running){
+        send(clientList);
+      }
     }
     
     public void send(ArrayList<Client> list){
-      System.out.print("hello");
       Client client = new Client();
-      while (running){ 
+      String msg = "";
+      while (incoming.size()>0){         
+        msg = incoming.remove();
+        
         for (int i = 0; i<list.size();i++){
           client = list.get(i);
           try{
             PrintWriter output = new PrintWriter(client.getSocket().getOutputStream());
             
-            output.println(incoming.remove());
+            output.println(msg);
             output.flush();
           }catch(IOException e) {
             e.printStackTrace();        
@@ -91,12 +97,14 @@ class ChatProgramServer {
     private BufferedReader input; //Stream for network input
     private Client client;  //keeps track of the client socket
     private boolean running;
+    private int clientNumber;
     /* ConnectionHandler
      * Constructor
      * @param the socket belonging to this client connection
      */    
-    ConnectionHandler(Client s) { 
-      client = s;  //constructor assigns client to this    
+    ConnectionHandler(Client s, int n) { 
+      client = s;  //constructor assigns client to this 
+      clientNumber = n;
       try {  //assign all connections to client
         this.output = new PrintWriter(client.getSocket().getOutputStream());
         InputStreamReader stream = new InputStreamReader(client.getSocket().getInputStream());
@@ -123,23 +131,32 @@ class ChatProgramServer {
         output.flush();
       }
       
-      try {
+      boolean gotUserName = false;
+      
+      while(!gotUserName){
+        try {
           if (input.ready()) { //check for an incoming messge
             msg = input.readLine();  //get a message from the client
-            System.out.println("client username: " + msg); 
+            System.out.println("client username: " + msg);
+            client.setName(msg);
+            gotUserName = true;
           }
-          }catch (IOException e) { 
-            System.out.println("Failed to recieve username");
-            e.printStackTrace();
-          }
-          
-          
+        }catch (IOException e) { 
+          System.out.println("Failed to recieve username");
+          e.printStackTrace();
+        }
+      }
+    
+    
       //Get a message from the client
       while(running) {  // loop unit a message is received        
         try {
           if (input.ready()) { //check for an incoming messge
             msg = input.readLine();  //get a message from the client
-            System.out.println("msg from client: " + msg); 
+            for (int i =0; i<2;i++){
+              System.out.println(clientList.get(i).getName());
+            }
+            System.out.println(client.getName()+": "+ msg); 
             incoming.add(msg);
             //running=false; //stop receving messages
           }
