@@ -37,7 +37,7 @@ class ChatProgramServer {
     try {
       Thread msgSend = new Thread(new MessageSender());
       msgSend.start();
-      serverSock = new ServerSocket(796);  //assigns an port to the server
+      serverSock = new ServerSocket(5000);  //assigns an port to the server
       // serverSock.setSoTimeout(5000);  //5 second timeout
       while(running) {  //this loops to accept multiple clients
            client.setSocket(serverSock.accept());  //wait for connection
