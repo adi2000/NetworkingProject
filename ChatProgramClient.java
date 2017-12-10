@@ -8,8 +8,7 @@ import java.util.*;
 import javax.swing.JTabbedPane;
 
 class ChatProgramClient {
-  //implements ListSelectionListener?
-  
+    
   ArrayList<String> chatList = new ArrayList<String>();
       
   JPanel rightPanel;
@@ -40,11 +39,15 @@ class ChatProgramClient {
   public void go() {
     //setting window
     JFrame window = new JFrame("Chat Client");
+    window.setResizable(false);
+    window.setLocationRelativeTo(null);
+    window.setSize(800,550);
     
-    //ALL RIGHT PANEL CODE**************************************************/
+    //RIGHT PANEL CODE**************************************************/
     rightPanel = new JPanel();
-    rightPanel.setLayout(new GridLayout(2,0));
-    
+    //rightPanel.setLayout(new GridLayout(2,0));
+    rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+      
     JPanel textPanel = new JPanel();
     textPanel.setLayout(new FlowLayout());
 
@@ -56,9 +59,12 @@ class ChatProgramClient {
        
     JLabel errorLabel = new JLabel("");
     
-    typeField = new JTextField(10);
+    typeField = new JTextField(36);
     
     msgArea = new JTextArea();
+    msgArea.setRows(50);
+    msgArea.setColumns(36);
+    msgArea.setEditable(false);
     JPanel msgPanel = new JPanel();
     tabbedPane = new JTabbedPane();
     tabbedPane.addTab("tab 1", msgArea);
@@ -72,32 +78,39 @@ class ChatProgramClient {
     rightPanel.add(tabbedPane);
     rightPanel.add(textPanel);
     
-    /*****************************************************/
+    // LEFT PANEL CODE *****************************************************/
     leftPanel = new JPanel();
-    leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+    //leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
     
     searchPanel = new JPanel();
-    searchBar = new JTextField(25);
+    searchBar = new JTextField(15);
     searchButton = new JButton("Search");
+    searchPanel.add(searchBar);
+    searchPanel.add(searchButton);
     
     listModel = new DefaultListModel<String>();
     users = ChatProgramServer.getList();
-    System.out.println(users);
+    //System.out.println(users);
     
     for (int i = 0; i < users.size(); i++){
       String name = (users.get(i)).getName();
       listModel.addElement((String)name);
     }
     
+    //test code: to be deleted
+    listModel.addElement("aabc");
+    listModel.addElement("def");
+    listModel.addElement("ghi");
+    
     userList = new JList(listModel);
     userList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
     //userList.addListSelectionListener(new ListListener());
     JScrollPane listScroll = new JScrollPane(userList);
-    userList.setVisibleRowCount(10);
+    userList.setVisibleRowCount(50);
     
     Dimension d = userList.getPreferredSize();
-    d.width = 400;
-    d.height = 400;
+    d.width = 600;
+    d.height = 600;
     listScroll.setPreferredSize(d);
     
     leftPanel.add(searchPanel);
@@ -108,7 +121,6 @@ class ChatProgramClient {
     window.add(BorderLayout.EAST,rightPanel);
     window.add(BorderLayout.WEST,leftPanel);
     
-    window.setSize(600,400);
     window.setVisible(true);
     
     /**********************************************************************************************************************************/
@@ -130,7 +142,9 @@ class ChatProgramClient {
 
     while (running){
       try{
-        msgArea.append(input.readLine());
+        if (input.ready()){
+          msgArea.append(input.readLine());   // this gets the message from the server
+        }
       }catch (IOException e) { 
         System.out.println("Failed to receive msg from the server");
         e.printStackTrace();
@@ -148,12 +162,15 @@ class ChatProgramClient {
   
   public void send(){
     String text = typeField.getText();      
+    
     output.println(text);
     output.flush();
+    
     typeField.setText("");
       
-    msgArea.append("\n" + text);
-  }
+   }
+  
+  
   
   //****** Inner Classes for Action Listeners ****
   public class sendListener implements ActionListener{
