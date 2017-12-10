@@ -40,12 +40,13 @@ class ChatProgramServer {
       serverSock = new ServerSocket(5000);  //assigns an port to the server
       // serverSock.setSoTimeout(5000);  //5 second timeout
       while(running) {  //this loops to accept multiple clients
+        //client.clear();
            client.setSocket(serverSock.accept());  //wait for connection
            System.out.println("Client connected");
            //Note: you might want to keep references to all clients if you plan to broadcast messages
-           clientList.add(client);
+           //clientList.add(client);
            //Also: Queues are good tools to buffer incoming/outgoing messages
-           Thread t = new Thread(new ConnectionHandler(client,clientList.size()-1)); //create a thread for the new client and pass in the socket
+           Thread t = new Thread(new ConnectionHandler(client,clientList.size())); //create a thread for the new client and pass in the socket
            t.start(); //start the new thread
          }
     }catch(Exception e) { 
@@ -65,22 +66,28 @@ class ChatProgramServer {
     public void run(){
       
       while (running){
+        for (int i = 0; i<clientList.size();i++){
+          System.out.println(clientList.get(i).getName()+" "+i);
+        }
         send(clientList);
       }
     }
     
     public void send(ArrayList<Client> list){
-      Client client = new Client();
+      Client client;
       String msg = "";
-      while (incoming.size()>0){         
+      System.out.print("");//Will not work unless this is here (no idea why)
+      while (incoming.size()>0){ 
         msg = incoming.remove();
+        System.out.print(list.size());
         
         for (int i = 0; i<list.size();i++){
           client = list.get(i);
+          System.out.println(client.getName());
           try{
             PrintWriter output = new PrintWriter(client.getSocket().getOutputStream());
-            
-            output.println(msg);
+            //System.out.println("sending message: '"+msg+"'");
+            output.println(msg); 
             output.flush();
           }catch(IOException e) {
             e.printStackTrace();        
@@ -123,14 +130,14 @@ class ChatProgramServer {
       
       //Get a message from the client
       String msg="";
-         //Send a message to the client
-      output.print("Clients connected: ");
-      output.flush(); 
-      for (int i = 0; i<clientList.size();i++){
-        output.print(clientList.get(i).getName()+", ");
-        output.flush();
-      }
-      
+//         //Send a message to the client
+//      output.print("Clients connected: ");
+////      output.flush(); 
+//      for (int i = 0; i<clientList.size();i++){
+//        output.print(clientList.get(i).getName()+", ");
+//        output.flush();
+//      }
+//      
       boolean gotUserName = false;
       
       while(!gotUserName){
@@ -146,6 +153,8 @@ class ChatProgramServer {
           e.printStackTrace();
         }
       }
+      
+      clientList.add(client);
     
     
       //Get a message from the client
@@ -153,11 +162,8 @@ class ChatProgramServer {
         try {
           if (input.ready()) { //check for an incoming messge
             msg = input.readLine();  //get a message from the client
-            for (int i =0; i<2;i++){
-              System.out.println(clientList.get(i).getName());
-            }
-            System.out.println(client.getName()+": "+ msg); 
-            incoming.add(msg);
+            System.out.println(clientList.get(clientNumber).getName()+": "+ msg); 
+            incoming.add(clientList.get(clientNumber).getName()+": "+msg);
             //running=false; //stop receving messages
           }
           }catch (IOException e) { 
