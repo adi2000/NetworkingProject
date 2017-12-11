@@ -18,6 +18,7 @@ class ChatProgramServer {
   static Boolean running = true;  // controls if the server is accepting clients
   static Queue<String> incoming = new LinkedList<String>();
   static ArrayList<Socket> clientList = new ArrayList<Socket>();
+  static ArrayList<String> names = new ArrayList<String>();
   
    /** Main
     * @param args parameters from command line
@@ -44,7 +45,6 @@ class ChatProgramServer {
            client = (serverSock.accept());  //wait for connection
            System.out.println("Client connected");
            //Note: you might want to keep references to all clients if you plan to broadcast messages
-           //clientList.add(client);
            //Also: Queues are good tools to buffer incoming/outgoing messages
            Thread t = new Thread(new ConnectionHandler(client)); //create a thread for the new client and pass in the socket
            t.start(); //start the new thread
@@ -61,6 +61,28 @@ class ChatProgramServer {
     }
   }
   
+  class PrivateMessage Sender implements Runnable {
+    
+    public void run(){
+      
+      while (running){
+        send(clientList);
+      }
+      
+    }
+    
+    public void send (ArrayList<Socket> list){
+      //to do:
+      // find index of recipient username
+      //find corresponding socket
+      //substring out message
+      //create printwriter
+      //send
+      //idk probably cry
+      
+    }
+    
+  }
   class MessageSender implements Runnable {
     
     public void run(){
@@ -101,6 +123,9 @@ class ChatProgramServer {
     private boolean running;
     private int clientNumber;
     private String name;
+    
+    
+    
     /* ConnectionHandler
      * Constructor
      * @param the socket belonging to this client connection
@@ -118,6 +143,7 @@ class ChatProgramServer {
     } //end of constructor
   
     
+    
     /* run
      * executed on start of thread
      */
@@ -133,13 +159,17 @@ class ChatProgramServer {
 //        output.flush();
 //      }
 //      
+      
+      
       boolean gotUserName = false;
+      
       
       while(!gotUserName){
         try {
           if (input.ready()) { //check for an incoming messge
             msg = input.readLine();  //get a message from the client
             System.out.println("client username: " + msg);
+            incoming.add("0n"+msg+"xxxxxxxxxx".substring(0,msg.length()));
             name = msg;
             gotUserName = true;
           }
@@ -149,7 +179,9 @@ class ChatProgramServer {
         }
       }
       
+      
       clientList.add(client);
+      names.add(name);
     
     
       //Get a message from the client
@@ -157,9 +189,14 @@ class ChatProgramServer {
         try {
           if (input.ready()) { //check for an incoming messge
             msg = input.readLine();  //get a message from the client
-            System.out.println(name+": "+ msg); 
-            incoming.add(name+": "+msg);
-            //running=false; //stop receving messages
+            if (privateMessage(msg)){
+              //send private message somehow
+            }else{
+              msg = msg.substring(11);
+              System.out.println(name+": "+ msg); 
+              incoming.add(name+": "+msg);
+              //running=false; //stop receving messages
+            }
           }
           }catch (IOException e) { 
             System.out.println("Failed to receive msg from the client");
@@ -178,5 +215,14 @@ class ChatProgramServer {
         System.out.println("Failed to close socket");
       }
     } // end of run()
+    
+    public boolean privateMessage(String msg){
+      if (msg.substring(0,1)=="2"){
+        return true;
+      }else{
+        return false;
+      }
+    }
+    
   } //end of inner class   
 } //end of ChatProgramServer class
