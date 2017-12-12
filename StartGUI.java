@@ -5,7 +5,6 @@ import javax.swing.event.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import javax.swing.JTabbedPane;
 
 class StartGUI extends JFrame{
   
@@ -14,8 +13,7 @@ class StartGUI extends JFrame{
   JLabel label;
   JTextField askName;
   JButton button;
-  
-  static String username = ("");
+  public static String username = ("");
   
   public StartGUI(){
     
@@ -39,16 +37,20 @@ class StartGUI extends JFrame{
     thisFrame.setVisible(true);
   }
   
-  public static String giveName(){
-    return username;
-  }
   
   public class buttonListener implements ActionListener{
     public void actionPerformed(ActionEvent event){
-      thisFrame.dispose();
-      new ChatProgramClient().go();
+      username = askName.getText();
+      if (!username.equals("") && username.length() <= 10){
+        thisFrame.dispose();
+        new ChatProgramClient().go();
+      }
     }
-  }  
+  }
+  
+  public static String giveName(){
+    return username;
+  }
   
   public static void main (String[]args){
     new StartGUI();
