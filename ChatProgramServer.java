@@ -17,6 +17,7 @@ class ChatProgramServer {
   ServerSocket serverSock;// server socket for connection
   static Boolean running = true;  // controls if the server is accepting clients
   static Queue<String> incoming = new LinkedList<String>();
+  static Queue<String> privateIncoming = new LinkedList<String>();
   static ArrayList<Socket> clientList = new ArrayList<Socket>();
   static ArrayList<String> names = new ArrayList<String>();
   
@@ -38,6 +39,8 @@ class ChatProgramServer {
     try {
       Thread msgSend = new Thread(new MessageSender());
       msgSend.start();
+      Thread privMsgSend = new Thread(new PrivateMessageSender());
+      privMsgSend.start();
       serverSock = new ServerSocket(5000);  //assigns an port to the server
       // serverSock.setSoTimeout(5000);  //5 second timeout
       while(running) {  //this loops to accept multiple clients
@@ -61,7 +64,7 @@ class ChatProgramServer {
     }
   }
   
-  class PrivateMessage Sender implements Runnable {
+  class PrivateMessageSender implements Runnable {
     
     public void run(){
       
@@ -72,17 +75,56 @@ class ChatProgramServer {
     }
     
     public void send (ArrayList<Socket> list){
+      Socket client;
+      String msg;
+      String name;
+      int socketIndex = 0;
+      System.out.print("");//Will not work unless this is here (no idea why)
+      while (privateIncoming.size()>0){
+      
       //to do:
       // find index of recipient username
+        msg = privateIncoming.remove();
+        name = getName(msg.substring(0,10));
+        for (int i = 0; i<names.size();i++){
+          if (names.get(i).equals(name)){
+            socketIndex = i;
+          }
+        }
       //find corresponding socket
+        client = list.get(socketIndex);
       //substring out message
+        msg = msg.substring(10);
       //create printwriter
-      //send
-      //idk probably cry
+        try{
+            PrintWriter output = new PrintWriter(client.getOutputStream());
+            output.println(msg); 
+            output.flush();
+          }catch(IOException e) {
+            e.printStackTrace();        
+          }  
+      }
+        
+                       
       
     }
     
+    public String getName(String msg){
+      
+      for (int i = 9;i>0;i--){
+        if (msg.substring(i).equals("x")){
+          msg=msg.substring(0,i);
+        }else{
+          return msg;
+        }
+      }
+      return "";
+    }
+      
+    
   }
+    
+    
   class MessageSender implements Runnable {
     
     public void run(){
@@ -151,6 +193,7 @@ class ChatProgramServer {
       
       //Get a message from the client
       String msg="";
+      String name="";
 //         //Send a message to the client
 //      output.print("Clients connected: ");
 ////      output.flush(); 
@@ -167,10 +210,9 @@ class ChatProgramServer {
       while(!gotUserName){
         try {
           if (input.ready()) { //check for an incoming messge
-            msg = input.readLine();  //get a message from the client
-            System.out.println("client username: " + msg);
-            incoming.add("0n"+msg+"xxxxxxxxxx".substring(0,msg.length()));
-            name = msg;
+            name = input.readLine();  //get a message from the client
+            System.out.println("client username: " + name);
+            incoming.add("0n"+name+"^^^^^^^^^^".substring(name.length()));
             gotUserName = true;
           }
         }catch (IOException e) { 
@@ -179,6 +221,9 @@ class ChatProgramServer {
         }
       }
       
+      for (int i = 0;i<names.size();i++){
+        privateIncoming.add(name+"^^^^^^^^^^".substring(name.length())+"0n"+names.get(i)+"^^^^^^^^^^".substring(names.get(i).length()));
+      }
       
       clientList.add(client);
       names.add(name);
@@ -190,9 +235,9 @@ class ChatProgramServer {
           if (input.ready()) { //check for an incoming messge
             msg = input.readLine();  //get a message from the client
             if (privateMessage(msg)){
-              //send private message somehow
+              msg=name+": "+msg.substring(2);
+              privateIncoming.add(msg);
             }else{
-              msg = msg.substring(11);
               System.out.println(name+": "+ msg); 
               incoming.add(name+": "+msg);
               //running=false; //stop receving messages
@@ -217,7 +262,7 @@ class ChatProgramServer {
     } // end of run()
     
     public boolean privateMessage(String msg){
-      if (msg.substring(0,1)=="2"){
+      if (msg.substring(0,1).equals("2")){
         return true;
       }else{
         return false;
