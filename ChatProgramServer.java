@@ -54,7 +54,7 @@ class ChatProgramServer {
         t.start(); //start the new thread
       }
     }catch(Exception e) { 
-      // System.out.println("Error accepting connection");
+      System.out.println("Error accepting connection");
       //close all and quit
       try {
         client.close();
@@ -283,6 +283,7 @@ class ChatProgramServer {
       if (msg.substring(0,1).equals("m")){
         msg=name+": "+msg.substring(2);
         privateIncoming.add(msg);
+        privateIncoming.add(name+"^^^^^^^^^^".substring(10-name.length())+msg.substring(11));
       }else if (msg.substring(0,1).equals("g")){
         ArrayList<String> group = groups.get(Integer.parseInt(msg.substring(1,2)));
         for (int i=0;i<group.size();i++){
@@ -295,9 +296,14 @@ class ChatProgramServer {
       
       if (msg.substring(0,1).equals("g")){
         groups.add(new ArrayList<String>());
-        output.print("0g"+Integer.toString(groups.size()-1));
+        output.print("0"+Integer.toString(groups.size()-1));
       }else if(msg.substring(0,1).equals("a")){
-        groups.get(Integer.parseInt(msg.substring(1,2))).add(msg.substring(2));
+        ArrayList<String> group = groups.get(Integer.parseInt(msg.substring(1,2)));
+        group.add(msg.substring(2));
+        for (int i=0;i<group.size();i++){
+          privateIncoming.add(group.get(i)+msg.substring(2));
+        }
+        privateIncoming.add(msg.substring(2,12)+"0"+msg);
       }
       
       
