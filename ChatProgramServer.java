@@ -42,8 +42,8 @@ class ChatProgramServer {
       msgSend.start();
       Thread privMsgSend = new Thread(new PrivateMessageSender());
       privMsgSend.start();
-      serverSock = new ServerSocket(5000);  //assigns an port to the server
-      // serverSock.setSoTimeout(5000);  //5 second timeout
+      serverSock = new ServerSocket(5002);  //assigns an port to the server
+      //serverSock.setSoTimeout(20000);  //20 second timeout
       while(running) {  //this loops to accept multiple clients
         //client.clear();
         client = (serverSock.accept());  //wait for connection
@@ -55,6 +55,7 @@ class ChatProgramServer {
       }
     }catch(Exception e) { 
       System.out.println("Error accepting connection");
+      e.printStackTrace();
       //close all and quit
       try {
         client.close();
@@ -146,7 +147,7 @@ class ChatProgramServer {
           client = list.get(i);
           try{
             PrintWriter output = new PrintWriter(client.getOutputStream());
-            //System.out.println("sending message: '"+msg+"'");
+            System.out.println("sending message: '"+msg+"'");
             output.println(msg); 
             output.flush();
           }catch(IOException e) {
@@ -194,15 +195,7 @@ class ChatProgramServer {
       
       //Get a message from the client
       String msg="";
-      String name="";
-//         //Send a message to the client
-//      output.print("Clients connected: ");
-////      output.flush(); 
-//      for (int i = 0; i<clientList.size();i++){
-//        output.print(clientList.get(i).getName()+", ");
-//        output.flush();
-//      }
-//      
+      String name="";  
       
       
       boolean gotUserName = false;
@@ -222,7 +215,9 @@ class ChatProgramServer {
               incoming.add("0n"+name+"^^^^^^^^^^".substring(name.length()));
               gotUserName = true;
             }else{
+              System.out.println("in");
               output.print("username taken");
+              output.flush();
               accepted=true;
             }
             
@@ -233,8 +228,10 @@ class ChatProgramServer {
         }
       }
       
+      System.out.println("names:");
       for (int i = 0;i<names.size();i++){
-        output.print("0n"+names.get(i)+"^^^^^^^^^^".substring(names.get(i).length()));
+        output.println("0n"+names.get(i)+"^^^^^^^^^^".substring(names.get(i).length()));
+        output.flush();
       }
       
       
@@ -247,15 +244,17 @@ class ChatProgramServer {
         try {
           if (input.ready()) { //check for an incoming messge
             msg = input.readLine();  //get a message from the client
+            System.out.println("messsage: "+msg);
             if(msg.substring(0,1).equals("1")){
               System.out.println(name+": "+ msg); 
               incoming.add(name+": "+msg);
             }else if (msg.substring(0,1).equals("2")){
               privMsg(msg.substring(1));
             }else if (msg.substring(0,1).equals("0")){
-              admin(msg.substring(1));
-            }else{
+              makeGroup(msg.substring(1));
+            }else if (msg.substring(0,1).equals("3")){
               incoming.add("0d"+name);
+              System.out.println("Disconnecting client: "+name);
               running = false;
             }
           }
@@ -264,8 +263,7 @@ class ChatProgramServer {
           System.out.println("Failed to receive msg from the client");
           e.printStackTrace();
         }
-      }   
-      
+      }
       
       
       //close the socket
@@ -273,6 +271,7 @@ class ChatProgramServer {
         input.close();
         output.close();
         client.close();
+        System.out.println("Socket closed");
       }catch (Exception e) { 
         System.out.println("Failed to close socket");
       }
@@ -283,7 +282,7 @@ class ChatProgramServer {
       if (msg.substring(0,1).equals("m")){
         msg=name+": "+msg.substring(2);
         privateIncoming.add(msg);
-        privateIncoming.add(name+"^^^^^^^^^^".substring(10-name.length())+msg.substring(11));
+        privateIncoming.add(name+"^^^^^^^^^^".substring(name.length())+msg.substring(11));
       }else if (msg.substring(0,1).equals("g")){
         ArrayList<String> group = groups.get(Integer.parseInt(msg.substring(1,2)));
         for (int i=0;i<group.size();i++){
@@ -292,18 +291,22 @@ class ChatProgramServer {
       }        
       
     }
-    public void admin(String msg){
+    public void makeGroup(String msg){
       
       if (msg.substring(0,1).equals("g")){
         groups.add(new ArrayList<String>());
-        output.print("0"+Integer.toString(groups.size()-1));
+        System.out.println("0g"+Integer.toString(groups.size()-1));
+        output.println("0g"+Integer.toString(groups.size()-1));
+        output.flush();
       }else if(msg.substring(0,1).equals("a")){
         ArrayList<String> group = groups.get(Integer.parseInt(msg.substring(1,2)));
         group.add(msg.substring(2));
         for (int i=0;i<group.size();i++){
-          privateIncoming.add(group.get(i)+msg.substring(2));
+          privateIncoming.add(group.get(i)+"0"+msg);
         }
-        privateIncoming.add(msg.substring(2,12)+"0"+msg);
+        for (int i=0;i<group.size();i++){
+          privateIncoming.add(msg.substring(2)+"0a"+msg.substring(1,2)+group.get(i));
+        }
       }
       
       
