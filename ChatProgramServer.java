@@ -1,9 +1,10 @@
 /* [ChatProgramServer.java]
- * Description: This is an example of a chat server.
- * The program  waits for a client and accepts a message. 
- * It then responds to the message and quits.
- * This server demonstrates how to employ multithreading to accepts multiple clients
- * @author Mangat
+ * Description: This chat server accepts clients
+ * and recieves messages that specify either a broadcast
+ * or one on one private messages. It also handles messages
+ * for adding and disconnecting users that it recives from
+ * the client
+ * @author David Stewart
  * @version 1.0a
  */
 
